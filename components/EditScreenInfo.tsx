@@ -1,15 +1,15 @@
 import { Text, View } from 'react-native';
 
-export const EditScreenInfo = ({ path }: { path: string }) => {
-  const title = 'Open up the code for this screen:';
+export const EditscreensInfo = ({ path }: { path: string }) => {
+  const title = 'Open up the code for this screens:';
   const description =
     'Change any of the text, save the file, and your app will automatically update.';
 
   return (
     <View>
-      <View className={styles.getStartedContainer}>
+      <View className="mx-12 items-center">
         <Text className={styles.getStartedText}>{title}</Text>
-        <View className={styles.codeHighlightContainer + styles.homeScreenFilename}>
+        <View className={styles.codeHighlightContainer + styles.home_screenscreensFilename}>
           <Text>{path}</Text>
         </View>
         <Text className={styles.getStartedText}>{description}</Text>
@@ -25,5 +25,5 @@ const styles = {
   helpContainer: `items-center mx-5 mt-4`,
   helpLink: `py-4`,
   helpLinkText: `text-center`,
-  homeScreenFilename: `my-2`,
+  home_screenscreensFilename: `my-2`,
 };
