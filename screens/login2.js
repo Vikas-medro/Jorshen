@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -9,8 +9,12 @@ import {
   Image,
 } from 'react-native';
 
-//API client
-import axios from 'axios';
+import { API } from "../services/api";
+
+import * as WebBrowser from "expo-web-browser";
+import * as Google from "expo-auth-session/providers/google";
+
+WebBrowser.maybeCompleteAuthSession();
 
 const login2 = ({ navigation }) => {
 
@@ -20,20 +24,54 @@ const login2 = ({ navigation }) => {
   const [emailError, setEmailError] = useState('');
   const [passwordError, setPasswordError] = useState('');
 
-  const handlelogin =(Credentials) =>{
-    
-  }
+  // GOOGLE AUTH
+  const [request, response, promptAsync] = Google.useAuthRequest({
+    expoClientId: "EXPO_CLIENT_ID",
+    androidClientId: '616137550294-4vik65p98fb3beu9u60u9to8b54j4bm7.apps.googleusercontent.com',
+    iosClientId: "IOS_CLIENT_ID",
+    webClientId: "WEB_CLIENT_ID",
+  });
 
-  // ✅ Email validation function
+  useEffect(() => {
+    if (response?.type === "success") {
+      const { authentication } = response;
+
+      handleGoogleLogin(authentication.accessToken);
+    }
+  }, [response]);
+
+  const handleGoogleLogin = async (token) => {
+    try {
+
+      const res = await API.post("/google-login", {
+        token,
+        deviceInfo: "Expo Mobile"
+      });
+
+      console.log(res.data);
+
+      navigation.replace("home_screen");
+
+    } catch (error) {
+
+      console.log(error?.response?.data);
+
+      setPasswordError(
+        error?.response?.data?.message || "Google login failed"
+      );
+
+    }
+  };
+
   const validateEmail = (value) => {
     const regex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     return regex.test(value);
   };
 
-  const handleLogin = () => {
+  const handleLogin = async () => {
+
     let valid = true;
 
-    // Reset errors
     setEmailError('');
     setPasswordError('');
 
@@ -50,26 +88,44 @@ const login2 = ({ navigation }) => {
       valid = false;
     }
 
-    if (valid) {
-      navigation.navigate('Signup');
+    if (!valid) return;
+
+    try {
+
+      const res = await API.post("/login", {
+        email,
+        password,
+        deviceInfo: "Expo Mobile"
+      });
+
+      console.log(res.data);
+
+      navigation.replace("home_screen");
+
+    } catch (error) {
+
+      console.log(error?.response?.data);
+
+      setPasswordError(
+        error?.response?.data?.message || "Login failed"
+      );
+
     }
   };
 
   return (
     <SafeAreaView style={styles.container}>
-      {/* Back Button */}
+
       <TouchableOpacity style={styles.back} onPress={() => navigation.goBack()}>
         <Text style={styles.backText}>‹</Text>
       </TouchableOpacity>
 
-      {/* Header */}
       <Text style={styles.title}>
         Welcome to <Image source={require('../assets/Images/small_logo.png')} style={styles.logo} />
       </Text>
 
       <Text style={styles.subtitle}>Sign in to your account</Text>
 
-      {/* Email */}
       <Text style={styles.label}>Email</Text>
       <TextInput
         placeholder="Email"
@@ -80,7 +136,6 @@ const login2 = ({ navigation }) => {
       />
       {emailError ? <Text style={styles.errorText}>{emailError}</Text> : null}
 
-      {/* Password */}
       <Text style={styles.label}>Password</Text>
       <TextInput
         placeholder="Password"
@@ -92,33 +147,36 @@ const login2 = ({ navigation }) => {
       {passwordError ? <Text style={styles.errorText}>{passwordError}</Text> : null}
 
       <TouchableOpacity
-
        style={styles.forgot}
        onPress={() => navigation.navigate('forgot_password')}>
        <Text style={styles.forgot}>Forgot password?</Text>
-        
       </TouchableOpacity>
 
-      {/* Buttons */}
       <TouchableOpacity style={styles.primaryBtn} onPress={handleLogin}>
         <Text style={styles.primaryText}>Login</Text>
       </TouchableOpacity>
 
-      <TouchableOpacity style={styles.googleBtn} onPress={() => navigation.navigate('Signup')}>
+      {/* GOOGLE LOGIN BUTTON */}
+      <TouchableOpacity
+        style={styles.googleBtn}
+        onPress={() => promptAsync()}
+        disabled={!request}
+      >
         <Text style={styles.googleText}>
           <View style={styles.google_Icon}>
-          <Image source={require('../assets/Images/google_icon.png')} style={styles.googleIcon} />
+            <Image source={require('../assets/Images/google_icon.png')} style={styles.googleIcon} />
           </View>
-          {" "}Continue with Google</Text>
+          {" "}Continue with Google
+        </Text>
       </TouchableOpacity>
 
-      {/* Bottom */}
       <TouchableOpacity style={styles.Register_button} onPress={() => navigation.navigate('Signup')}>
-      <View style={styles.bottom}>
-        <Text>Don’t have an account?</Text>
-        <Text style={styles.register}>Register</Text>
-      </View>
-     </TouchableOpacity>
+        <View style={styles.bottom}>
+          <Text>Don’t have an account?</Text>
+          <Text style={styles.register}>Register</Text>
+        </View>
+      </TouchableOpacity>
+
     </SafeAreaView>
   );
 };
@@ -131,12 +189,12 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
     paddingHorizontal: 24,
   },
-   googleIcon:{
-     width: 30,
+
+  googleIcon:{
+    width: 30,
     height: 30,
     bottom: -8,
-    
-   },
+  },
 
   back: {
     marginTop: 10,
@@ -156,13 +214,11 @@ const styles = StyleSheet.create({
     fontSize: 30,
     fontWeight: '700',
     marginTop: 30,
-    
   },
 
   logo: {
     height: 25,
     width: 30,
-    
   },
 
   subtitle: {
@@ -220,13 +276,11 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
     borderRadius: 30,
     alignItems: 'center',
-    
   },
 
   googleText: {
     fontSize: 18,
     fontWeight: '600',
-    
   },
 
   bottom: {
@@ -246,6 +300,7 @@ const styles = StyleSheet.create({
     color: '#6C4CF1',
     fontWeight: '600',
   },
+
   Register_button: {
     bottom: 100
   }
