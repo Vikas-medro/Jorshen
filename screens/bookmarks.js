@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import {
   View,
   Text,
@@ -13,41 +13,44 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Swipeable } from 'react-native-gesture-handler';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useFocusEffect } from '@react-navigation/native';
 
 const BookmarkScreen = ({ navigation }) => {
 
   // ✅ Dynamic bookmarks state instead of hardcoded UI
-  const [bookmarks, setBookmarks] = useState([
-    {
-      id: '1',
-      type: 'large',
-      tag: 'TECHNOLOGY',
-      title: 'Insurtech startup PasarPolis gets $54 million — Series B',
-      image:'https://images.unsplash.com/photo-1559526324-593bc073d938',
-    },
+  const [bookmarks, setBookmarks] = useState([]);
 
-    {
-      id: '2',
-      type: 'small',
-      tag: 'TECHNOLOGY',
-      title: 'The IPO parade continues as Wish files, Bumble targets',
-      image:
-        'https://images.unsplash.com/photo-1581090700227-1e37b190418e',
-    },
-    {
-      id: '3',
-      type: 'small',
-      tag: 'SPORTS',
-      title: 'Hypatos gets $11.8M funding for automation',
-      image:
-        'https://images.unsplash.com/photo-1551288049-bebda4e38f71',
-    },
-  ]);
+  // Load bookmarks when screen focuses
+  useFocusEffect(
+    useCallback(() => {
+      loadBookmarks();
+    }, [])
+  );
+
+  const loadBookmarks = async () => {
+    try {
+      const stored = await AsyncStorage.getItem('@bookmarks');
+      if (stored) {
+        setBookmarks(JSON.parse(stored));
+      } else {
+        setBookmarks([]);
+      }
+    } catch (e) {
+      console.log('Error loading bookmarks', e);
+    }
+  };
 
 
   // ✅ Delete function
-  const deleteBookmark = (id) => {
-    setBookmarks(bookmarks.filter(item => item.id !== id));
+  const deleteBookmark = async (id) => {
+    try {
+      const updatedBookmarks = bookmarks.filter(item => item.id !== id);
+      setBookmarks(updatedBookmarks);
+      await AsyncStorage.setItem('@bookmarks', JSON.stringify(updatedBookmarks));
+    } catch (e) {
+      console.log('Error deleting bookmark', e);
+    }
   };
 
 
@@ -129,30 +132,29 @@ const BookmarkScreen = ({ navigation }) => {
             renderRightActions={() => renderRightActions(item.id)}
           >
 
-            {item.type === 'large' ? (
-
-              <View style={styles.largeCard}>
-                <Text style={styles.tag}>{item.tag}</Text>
-                <Text style={styles.largeTitle}>{item.title}</Text>
-              </View>
-
-            ) : (
-
+            <TouchableOpacity
+              activeOpacity={0.8}
+              onPress={() => navigation.navigate('news', { news: item })}
+            >
               <View style={styles.newsRow}>
                 <Image source={{ uri: item.image }} style={styles.newsImage} />
 
-                <View style={{ flex: 1 }}>
+                <View style={{ flex: 1, justifyContent: 'center' }}>
                   <Text style={styles.tag}>{item.tag}</Text>
                   <Text style={styles.newsTitle}>{item.title}</Text>
                 </View>
-
               </View>
-
-            )}
+            </TouchableOpacity>
 
           </Swipeable>
 
         ))}
+
+        {bookmarks.length === 0 && (
+          <Text style={{ textAlign: 'center', marginTop: 30, color: '#999', fontSize: 16 }}>
+            No bookmarks saved yet.
+          </Text>
+        )}
 
         <View style={{ height: 100 }} />
 

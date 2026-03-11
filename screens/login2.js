@@ -147,9 +147,9 @@ const login2 = ({ navigation }) => {
       {passwordError ? <Text style={styles.errorText}>{passwordError}</Text> : null}
 
       <TouchableOpacity
-       style={styles.forgot}
-       onPress={() => navigation.navigate('forgot_password')}>
-       <Text style={styles.forgot}>Forgot password?</Text>
+        style={styles.forgot}
+        onPress={() => navigation.navigate('forgot_password')}>
+        <Text style={styles.forgot}>Forgot password?</Text>
       </TouchableOpacity>
 
       <TouchableOpacity style={styles.primaryBtn} onPress={handleLogin}>
@@ -170,12 +170,18 @@ const login2 = ({ navigation }) => {
         </Text>
       </TouchableOpacity>
 
-      <TouchableOpacity style={styles.Register_button} onPress={() => navigation.navigate('Signup')}>
-        <View style={styles.bottom}>
-          <Text>Don’t have an account?</Text>
-          <Text style={styles.register}>Register</Text>
-        </View>
-      </TouchableOpacity>
+
+      {/* Footer */}
+      <View style={styles.bottom_color}>
+        <Text style={styles.footerText}>
+          Don’t have an account?{'  '}
+          <TouchableOpacity onPress={() => navigation.navigate('Signup')}>
+            <Text style={styles.register}>Register</Text>
+          </TouchableOpacity>
+        </Text>
+      </View>
+
+
 
     </SafeAreaView>
   );
@@ -190,7 +196,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
   },
 
-  googleIcon:{
+  googleIcon: {
     width: 30,
     height: 30,
     bottom: -8,
@@ -288,7 +294,7 @@ const styles = StyleSheet.create({
     bottom: -535,
     width: '120%',
     padding: 24,
-    backgroundColor: '#EFEAFF',
+    backgroundColor: '#58498dff',
     left: -35,
     alignItems: 'center',
     flexDirection: 'row',
@@ -299,9 +305,26 @@ const styles = StyleSheet.create({
   register: {
     color: '#6C4CF1',
     fontWeight: '600',
+    bottom: -4
+  },
+  bottom_color: {
+    position: 'absolute',
+    bottom: 0,
+    width: '115%',
+    paddingVertical: 20,
+    paddingHorizontal: 60,
+    backgroundColor: '#EFEAFF',
+    alignItems: 'center',
+    borderTopLeftRadius: 30,
+    borderTopRightRadius: 43,
   },
 
-  Register_button: {
-    bottom: 100
-  }
+  footerText: {
+    textAlign: 'center',
+    fontSize: 14,
+    color: '#000',
+    lineHeight: 30,
+    padding: 6,
+  },
+
 });

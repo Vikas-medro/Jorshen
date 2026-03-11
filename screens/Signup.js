@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
+  Image,
   TextInput,
   StyleSheet,
   TouchableOpacity,
@@ -13,6 +14,10 @@ import Icon from '@expo/vector-icons/Ionicons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { BlurView } from 'expo-blur';
 import { API } from '../services/api';
+import * as WebBrowser from 'expo-web-browser';
+import * as Google from 'expo-auth-session/providers/google';
+
+WebBrowser.maybeCompleteAuthSession();
 
 const Signup = ({ navigation }) => {
   const [fullName, setFullName] = useState('');
@@ -24,7 +29,47 @@ const Signup = ({ navigation }) => {
   const [showSuccess, setShowSuccess] = useState(false);
   const [loading, setLoading] = useState(false);
 
-  // SIGNUP VALIDATION + API CALL
+  // ─── Google Auth Setup ───────────────────────────────────────────
+  const [request, response, promptAsync] = Google.useAuthRequest({
+    androidClientId: '616137550294-4vik65p98fb3beu9u60u9to8b54j4bm7.apps.googleusercontent.com',
+    expoClientId: 'EXPO_CLIENT_ID',
+    iosClientId: 'IOS_CLIENT_ID',
+    webClientId: 'WEB_CLIENT_ID',
+  }, {
+    useProxy: true,   // ← tells Expo to use auth.expo.io as redirect URI (required for Expo Go)
+  });
+
+  // Fires whenever Google auth response changes
+  useEffect(() => {
+    if (response?.type === 'success') {
+      const { authentication } = response;
+      handleGoogleSignup(authentication.accessToken);
+    }
+  }, [response]);
+
+  // Sends Google token to backend → auto-registers/logs-in the user
+  const handleGoogleSignup = async (token) => {
+    try {
+      setLoading(true);
+      const res = await API.post('/google-login', {
+        token,
+        deviceInfo: 'Expo Mobile',
+      });
+      console.log('Google signup success:', res.data);
+      navigation.replace('home_screen');
+    } catch (error) {
+      console.log('Google signup error:', error?.response?.data);
+      const msg =
+        error?.response?.data?.message ||
+        error?.message ||
+        'Google sign-up failed. Please try again.';
+      setErrors((prev) => ({ ...prev, general: msg }));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // ─── Email / Password Signup ──────────────────────────────────────
   const handleSignup = async () => {
     let tempErrors = {};
     let valid = true;
@@ -57,20 +102,17 @@ const Signup = ({ navigation }) => {
 
     try {
       setLoading(true);
-      const response = await API.post('/register', {
+      const res = await API.post('/register', {
         name: fullName,
         email,
         password,
-        mobile,          // include mobile if backend accepts it; remove if it causes a 400
         deviceInfo: 'Expo Mobile',
       });
-      console.log('Signup success:', response.data);
-      setShowSuccess(true); // show success modal
+      console.log('Signup success:', res.data);
+      setShowSuccess(true);
     } catch (error) {
-      // Log full error so you can see the real cause in Metro / terminal
       console.log('Signup error status:', error?.response?.status);
       console.log('Signup error data:', JSON.stringify(error?.response?.data));
-      console.log('Signup error message:', error?.message);
       const msg =
         error?.response?.data?.message ||
         error?.response?.data?.error ||
@@ -152,6 +194,29 @@ const Signup = ({ navigation }) => {
               : <Text style={styles.continueText}>Create Account</Text>}
           </LinearGradient>
         </TouchableOpacity>
+
+        {/* GOOGLE BUTTON */}
+        <TouchableOpacity
+          style={styles.googleBtn}
+          onPress={() => promptAsync({ useProxy: true })}
+          disabled={!request || loading}>
+          <Image
+            source={require('../assets/Images/google_icon.png')}
+            style={styles.googleIcon}
+          />
+          <Text style={styles.googleText}>Continue with Google</Text>
+        </TouchableOpacity>
+
+             {/* Footer */}
+              <View style={styles.bottom_color}>
+                <Text style={styles.footerText}>
+                  Don’t have an account?{'  '}
+                  <TouchableOpacity onPress={() => navigation.navigate('login2')}>
+                    <Text style={styles.register}>Sign in</Text>
+                  </TouchableOpacity>
+                </Text>
+              </View>
+
       </View>
 
       {/* SUCCESS MODAL */}
@@ -268,6 +333,8 @@ const styles = StyleSheet.create({
     gap: 10,
   },
 
+  
+
   googleText: {
     fontSize: 18,
     fontWeight: '600',
@@ -342,6 +409,29 @@ const styles = StyleSheet.create({
     borderRadius: 30,
     backgroundColor: '#6C4CF1',
     alignItems: 'center',
+  },
+    bottom_color: {
+    position: 'absolute',
+    bottom: 0,
+    width: '118%',
+    paddingVertical: 20,
+    paddingHorizontal: 60,
+    backgroundColor: '#EFEAFF',
+    alignItems: 'center',
+    borderTopLeftRadius: 30,
+    borderTopRightRadius: 40,
+  },
+    footerText: {
+    textAlign: 'center',
+    fontSize: 14,
+    color: '#000',
+    lineHeight: 30,
+    padding: 6,
+  },
+    register: {
+    color: '#6C4CF1',
+    fontWeight: '600',
+    bottom: -4
   },
 
   openText: {

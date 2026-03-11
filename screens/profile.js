@@ -235,12 +235,21 @@ const Profile = ({ navigation }) => {
 
       {/* Bottom Nav */}
       <View style={styles.bottomNav}>
+
         <Icon name="home-outline" size={26} color="#999" 
         onPress={()=> navigation.navigate('home_screen')}/>
-        <Icon name="bookmark-outline" size={26} color="#999" />
-        <Icon name="search-outline" size={26} color="#999" />
-        <Icon name="notifications-outline" size={26} color="#999" />
-        <Icon name="settings-outline" size={26} color="#000" />
+
+        <Icon name="bookmark-outline" size={26} color="#999" 
+        onPress={()=> navigation.navigate('bookmarks')}/>
+
+        <Icon name="search-outline" size={26} color="#999"
+        onPress={()=> navigation.navigate('search')}/>
+
+        <Icon name="notifications-outline" size={26} color="#999" 
+        onPress={()=> navigation.navigate('unread')}/>
+
+        <Icon name="settings-outline" size={26} color="#000" 
+        onPress={()=> navigation.navigate('setting')}/>
       </View>
 
     </SafeAreaView>

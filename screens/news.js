@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -8,13 +8,83 @@ import {
   StatusBar,
   TouchableOpacity,
   ScrollView,
+  Modal,
+  TextInput,
+  TouchableWithoutFeedback,
+  KeyboardAvoidingView,
+  Platform,
+  Share,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import CommentModal from '../components/CommentModal';
 
 const NewsDetailScreen = ({ navigation, route }) => {
 
   // ✅ Get data from HomeScreen
-const news = route?.params?.news;
+  const news = route?.params?.news;
+
+  const [isBookmarked, setIsBookmarked] = useState(false);
+  const [showComments, setShowComments] = useState(false);
+
+  useEffect(() => {
+    if (news) {
+      checkBookmarkStatus();
+    }
+  }, [news]);
+
+  const checkBookmarkStatus = async () => {
+    try {
+      const stored = await AsyncStorage.getItem('@bookmarks');
+      if (stored) {
+        const bookmarks = JSON.parse(stored);
+        const exists = bookmarks.some(b => b.id === news.id);
+        setIsBookmarked(exists);
+      }
+    } catch (e) {
+      console.log('Error checking bookmark status', e);
+    }
+  };
+
+  const toggleBookmark = async () => {
+    if (!news) return;
+    try {
+      const stored = await AsyncStorage.getItem('@bookmarks');
+      let bookmarks = stored ? JSON.parse(stored) : [];
+
+      if (isBookmarked) {
+        // Remove it
+        bookmarks = bookmarks.filter(b => b.id !== news.id);
+        setIsBookmarked(false);
+      } else {
+        // Add it
+        bookmarks.unshift({
+          id: news.id,
+          title: news.title,
+          image: news.image,
+          tag: news.category || 'FEATURED',
+          type: 'large'
+        });
+        setIsBookmarked(true);
+      }
+
+      await AsyncStorage.setItem('@bookmarks', JSON.stringify(bookmarks));
+    } catch (e) {
+      console.log('Error toggling bookmark', e);
+    }
+  };
+
+  const handleShare = async () => {
+    if (!news) return;
+    try {
+      await Share.share({
+        message: `${news.title}\n\nRead more on Jorshan Media!`,
+        title: news.title,
+      });
+    } catch (e) {
+      console.log('Error sharing', e);
+    }
+  };
 
   return (
     <SafeAreaView style={styles.container}>
@@ -70,7 +140,7 @@ const news = route?.params?.news;
             This is full article content related to "{news.title}".
             {'\n\n'}
             You can later pass full description from HomeScreen also.
-          
+
 
           </Text>
 
@@ -79,10 +149,20 @@ const news = route?.params?.news;
 
       {/* Floating Bottom Bar */}
       <View style={styles.bottomBar}>
-        <Ionicons name="chatbubble-outline" size={22} color="#666" />
-        <Ionicons name="bookmark-outline" size={22} color="#666" />
-        <Ionicons name="share-social-outline" size={22} color="#666" />
+        <TouchableOpacity onPress={() => setShowComments(true)}>
+          <Ionicons name="chatbubble-outline" size={22} color="#666" />
+        </TouchableOpacity>
+        <TouchableOpacity onPress={toggleBookmark}>
+          <Ionicons name={isBookmarked ? "bookmark" : "bookmark-outline"} size={22} color={isBookmarked ? "#000" : "#666"} />
+        </TouchableOpacity>
+        <TouchableOpacity onPress={handleShare}>
+          <Ionicons name="share-social-outline" size={22} color="#666" />
+        </TouchableOpacity>
       </View>
+
+      {/* 💬 COMMENTS MODAL */}
+      <CommentModal visible={showComments} onClose={() => setShowComments(false)} />
+
 
     </SafeAreaView>
   );
